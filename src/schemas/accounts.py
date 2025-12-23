@@ -11,6 +11,50 @@ class UserBase(BaseModel):
 class UserRegistrationRequestSchema(UserBase):
     password: str
 
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, email: EmailStr):
+        return accounts_validators.validate_email(str(email))
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, password: str):
+        return accounts_validators.validate_password_strength(password)
+
+
+class UserRegistrationResponseSchema(UserBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+
+class BaseMessageSchema(BaseModel):
+    message: str
+
+
+class UserActivationRequestSchema(BaseModel):
+    email: EmailStr
+    token: str
+
+
+class MessageResponseSchema(BaseMessageSchema):
+    pass
+
+
+class PasswordResetRequestSchema(BaseModel):
+    email: EmailStr
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, email: EmailStr):
+        return accounts_validators.validate_email(str(email))
+
+
+class PasswordResetCompleteRequestSchema(BaseModel):
+    email: EmailStr
+    token: str
+    password: str
 
     @field_validator("email")
     @classmethod
@@ -22,45 +66,21 @@ class UserRegistrationRequestSchema(UserBase):
     def validate_password(cls, password: str):
         return accounts_validators.validate_password_strength(password)
 
-class UserRegistrationResponseSchema(UserBase):
-    id: int
 
-    class Config:
-        from_attributes = True
-
-
-class Token(BaseModel):
+class UserLoginResponseSchema(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
 
 
-class UserActivationRequestSchema(BaseModel):
-    pass
-
-
-class MessageResponseSchema(BaseModel):
-    pass
-
-
-class PasswordResetRequestSchema(BaseModel):
-    pass
-
-
-class PasswordResetCompleteRequestSchema(BaseModel):
-    pass
-
-
-class UserLoginResponseSchema(BaseModel):
-    pass
-
-
 class UserLoginRequestSchema(BaseModel):
-    pass
+    email: EmailStr
+    password: str
 
 
 class TokenRefreshRequestSchema(BaseModel):
-    pass
+    refresh_token: str
 
 
 class TokenRefreshResponseSchema(BaseModel):
-    pass
+    access_token: str
