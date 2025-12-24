@@ -64,7 +64,8 @@ async def activation_account(
     if db_token:
         expires_at = cast(datetime, db_token.expires_at).replace(tzinfo=timezone.utc)
 
-    if (not db_user
+    if (
+        not db_user
         or not db_token
         or db_token.user_id != db_user.id
         or datetime.now(timezone.utc) > expires_at
@@ -88,10 +89,12 @@ async def activation_account(
 
         return {"message": "User account activated successfully."}
 
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         await db.rollback()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="An error occurred during activation.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during activation.",
+        )
 
 
 @router.post("/password-reset/request/", response_model=schemas.MessageResponseSchema)
@@ -113,10 +116,12 @@ async def password_reset_request(
             "message": "If you are registered, you will receive an email with instructions."
         }
 
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         await db.rollback()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="An error occurred during password reset request.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during password reset request.",
+        )
 
 
 @router.post("/reset-password/complete/", response_model=schemas.MessageResponseSchema)
