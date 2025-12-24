@@ -2,13 +2,10 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from dotenv import load_dotenv
 from jose import jwt, JWTError, ExpiredSignatureError
 
 from exceptions import TokenExpiredError, InvalidTokenError
 from security.interfaces import JWTAuthManagerInterface
-
-load_dotenv()
 
 
 class JWTAuthManager(JWTAuthManagerInterface):
@@ -16,10 +13,8 @@ class JWTAuthManager(JWTAuthManagerInterface):
     A manager for creating, decoding, and verifying JWT access and refresh tokens.
     """
 
-    _ACCESS_KEY_TIMEDELTA_MINUTES = int(os.getenv("ACCESS_KEY_TIMEDELTA_MINUTES", 10))
-    _REFRESH_KEY_TIMEDELTA_MINUTES = int(
-        os.getenv("REFRESH_KEY_TIMEDELTA_MINUTES", 60 * 24 * 7)
-    )
+    _ACCESS_KEY_TIMEDELTA_MINUTES = 10
+    _REFRESH_KEY_TIMEDELTA_MINUTES = 60 * 24 * 7
 
     def __init__(self, secret_key_access: str, secret_key_refresh: str, algorithm: str):
         """

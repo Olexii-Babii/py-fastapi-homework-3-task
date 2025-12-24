@@ -192,10 +192,11 @@ async def user_login(
         refresh_token = jwt_manager.create_refresh_token(
             data={"email": db_user.email, "user_id": db_user.id}
         )
+        payload_refresh_token = jwt_manager.decode_refresh_token(refresh_token)
         db_refresh_token = RefreshTokenModel.create(
             user_id=db_user.id,
             token=refresh_token,
-            days_valid=int(os.getenv("REFRESH_KEY_TIMEDELTA_MINUTES")) // (60 * 24),
+            days_valid=payload_refresh_token["exp"] // (60 * 24),
         )
         db.add(db_refresh_token)
         await db.commit()
