@@ -59,14 +59,6 @@ async def delete_reset_password_tokens(db: AsyncSession, user_id: int):
     )
 
 
-async def delete_reset_password_token_by_user_id(db: AsyncSession, user_id: int):
-    await db.execute(
-        delete(PasswordResetTokenModel).where(
-            PasswordResetTokenModel.user_id == user_id
-        )
-    )
-
-
 async def create_reset_password_token(db: AsyncSession, user_id: int):
     token = PasswordResetTokenModel(user_id=user_id)
     db.add(token)

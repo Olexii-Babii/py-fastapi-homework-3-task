@@ -1,30 +1,22 @@
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import cast
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, status, HTTPException
-from jose import jwt
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session, joinedload
 
 from crud import accounts as crud
 import schemas
-from config import get_jwt_auth_manager, get_settings, BaseAppSettings
+from config import get_jwt_auth_manager
 from database import (
     get_db,
-    UserModel,
-    UserGroupModel,
-    UserGroupEnum,
-    ActivationTokenModel,
-    PasswordResetTokenModel,
     RefreshTokenModel,
 )
-from exceptions import BaseSecurityError, InvalidTokenError, TokenExpiredError
+from exceptions import InvalidTokenError, TokenExpiredError
 from security.interfaces import JWTAuthManagerInterface
-from security.passwords import hash_password
 
 
 router = APIRouter()
@@ -72,8 +64,8 @@ async def activation_account(
     if db_token:
         expires_at = cast(datetime, db_token.expires_at).replace(tzinfo=timezone.utc)
 
-    if (
-        not db_token
+    if (not db_user
+        or not db_token
         or db_token.user_id != db_user.id
         or datetime.now(timezone.utc) > expires_at
     ):
@@ -122,7 +114,8 @@ async def password_reset_request(
 
     except SQLAlchemyError as e:
         await db.rollback()
-        return e
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="An error occurred during password reset request.")
 
 
 @router.post("/reset-password/complete/", response_model=schemas.MessageResponseSchema)
@@ -148,7 +141,7 @@ async def reset_password_complete(
         or db_user.id != db_token.user_id
         or expires_at <= datetime.now(timezone.utc)
     ):
-        await crud.delete_reset_password_token_by_user_id(db=db, user_id=db_user.id)
+        await crud.delete_reset_password_tokens(db=db, user_id=db_user.id)
         await db.commit()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or token."
@@ -156,7 +149,7 @@ async def reset_password_complete(
 
     try:
         db_user.password = reset_complete_request.password
-        await crud.delete_reset_password_token_by_user_id(db=db, user_id=db_user.id)
+        await crud.delete_reset_password_tokens(db=db, user_id=db_user.id)
         await db.commit()
         return {"message": "Password reset successfully."}
 
@@ -202,7 +195,7 @@ async def user_login(
         db_refresh_token = RefreshTokenModel.create(
             user_id=db_user.id,
             token=refresh_token,
-            days_valid=int(os.getenv("REFRESH_KEY_TIMEDELTA_MINUTES")),
+            days_valid=int(os.getenv("REFRESH_KEY_TIMEDELTA_MINUTES")) // (60 * 24),
         )
         db.add(db_refresh_token)
         await db.commit()
