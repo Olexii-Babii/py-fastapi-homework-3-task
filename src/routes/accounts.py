@@ -90,7 +90,8 @@ async def activation_account(
 
     except SQLAlchemyError as e:
         await db.rollback()
-        raise e
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="An error occurred during activation.")
 
 
 @router.post("/password-reset/request/", response_model=schemas.MessageResponseSchema)
